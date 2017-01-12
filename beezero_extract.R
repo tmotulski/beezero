@@ -1,6 +1,8 @@
 require(jsonlite)
+library(plyr)
+library(data.table)
 
-setwd("c:/Projects/Carsharing/datasets/beezero-muc")
+setwd("d:/Projects/Carsharing/datasets/beezero-muc")
 
 files <- list.files(pattern = ".json")
 
@@ -17,6 +19,7 @@ all_vehicles_df <- data.frame(
 write.table(all_vehicles_df, "all_vehicles_df.csv", col.names=TRUE, row.names = FALSE, sep=",")
 
 for (fileCount in seq_along(files)) {
+#for (fileCount in 2371:28962) {
  
   filename <- files[fileCount]
   
@@ -24,11 +27,10 @@ for (fileCount in seq_along(files)) {
   print(paste(fileCount," -- ",filename))
   
   json_data <- fromJSON(filename)
-  names(json_data)
   
   available_vehicles_df <- json_data$response$availableVehicles
   
-  vehicles_df <- data.frame(
+  vehicles_df <- rbind.fill(vehicles_df, data.frame(
     datetime = strptime(substr(filename, 1, 18), "%Y-%m-%dT%H_%M_%S", tz="Europe/Berlin"),
     id = available_vehicles_df$id,
     name = available_vehicles_df$name,
@@ -36,11 +38,15 @@ for (fileCount in seq_along(files)) {
     lng = available_vehicles_df$coordinate$longitude,
     fuelLevel = available_vehicles_df$fuelLevel,
     lastAddr = iconv(available_vehicles_df$lastAddress, from = "UTF-8", to = "latin1")
-  )
+  ))
 
-  all_vehicles_df <- rbind(all_vehicles_df, vehicles_df)
-  write.table(all_vehicles_df, "all_vehicles_df.csv", col.names=FALSE, row.names = FALSE, sep=",",append = TRUE)
+  #all_vehicles_df <- rbind(all_vehicles_df, vehicles_df)
   
 }
+
+write.table(vehicles_df, "all_vehicles_df.csv", col.names=FALSE, row.names = FALSE, sep=",",append = TRUE)
+
+
+
 
 
