@@ -128,3 +128,27 @@ df_route <- decode_pl(directions$routes$overview_polyline$points)
 
 google_map(data = df_route, key = key, height = 800, search_box = T) %>%
   add_markers()
+
+diff_time <- data.frame(carname = car_data$name,  datetime = car_data$datetime)
+diff_time$next_date <- c(diff_time$datetime[-1], NA)
+diff_time$diff <- difftime(diff_time$next_date, diff_time$datetime,units="mins")
+diff_time$diff <- as.numeric(diff_time$diff)
+
+res <- diff_time[diff_time$diff >30,]
+res <- na.omit(res)
+
+ls <- diff_time[diff_time$diff >30, c('diff')]
+sum(ls,na.rm = TRUE)
+
+day_df <- car_interval[car_interval$start_datetime >= '2016-09-27' & car_interval$start_datetime <= '2016-09-28',]
+
+car_coordinates <- data.frame(day_df$longitude, day_df$latitude)
+
+# getting the map
+mapgilbert <- get_map(location = c(lon = mean(day_df$longitude), lat = mean(day_df$latitude)), zoom = 16,
+                      maptype = "roadmap", scale = "auto")
+
+map <- get_googlemap(center = c(lon = mean(day_df$longitude), lat = mean(day_df$latitude)), markers = car_coordinates,
+                                zoom = 18, path = df, scale = 2)
+ggmap(map, extent = 'device')
+
