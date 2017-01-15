@@ -58,6 +58,7 @@ write.table(all_rent_interval, "all_rent_interval.csv", col.names=TRUE, row.name
 cost1perFuel <- 4
 
 all_rent_interval$calc_dist <- all_rent_interval$trip_fuel*100*cost1perFuel
+
 all_rent_interval <- cbind(all_rent_interval, paidTime = 0)
 all_rent_interval <- cbind(all_rent_interval, nightTime = 0)
 
@@ -65,20 +66,31 @@ all_rent_interval <- cbind(all_rent_interval, nightTime = 0)
 require(lubridate)
 
 for (i in 1: nrow(all_rent_interval)) {
-  MyDatesTable <- table(cut(c(all_rent_interval$start_datetime[i],all_rent_interval$end_datetime[i]), breaks="hour"))
+  print(i)
+  MyDatesTable <- table(cut(c(all_rent_interval$start_datetime[i],all_rent_interval$end_datetime[i]), breaks="min"))
   MyDatesTable <- data.frame(MyDatesTable)
-  
-  paidTime <- nrow(MyDatesTable[!(hour( MyDatesTable$Var1 ) >= 00 & hour( MyDatesTable$Var1 ) < 06) , ] )
-  freeTime <- nrow(MyDatesTable[(hour( MyDatesTable$Var1 ) >= 00 & hour( MyDatesTable$Var1 ) < 06) , ] )
+  MyDatesTable$isPaid <- 0
 
+  free1h <- ifelse(nrow(MyDatesTable) > 60, 60, nrow(MyDatesTable))
+  MyDatesTable[!(hour( MyDatesTable$Var1 ) >= 00 & hour( MyDatesTable$Var1 ) < 06), c("isPaid")] <- 1
+  MyDatesTable[(hour( MyDatesTable$Var1 ) >= 00 & hour( MyDatesTable$Var1 ) < 06), c("isPaid")] <- 0
+  MyDatesTable[1:free1h, c("isPaid")] <- 0   
+  
+  paidTime <- nrow(MyDatesTable[MyDatesTable$isPaid == 1 , ] )
+  freeTime <- nrow(MyDatesTable[MyDatesTable$isPaid == 0 , ] )
+  
   all_rent_interval$paidTime[i] <- paidTime
   all_rent_interval$nightTime[i] <- freeTime
 }
 
 cost1hour <- 5.5
 cost1km <- 0.29
-  
-all_rent_interval$rentCost <- (all_rent_interval$paidTime-1)*cost1hour + all_rent_interval$calc_dist*cost1km
+cost1min <- cost1hour / 60
+
+costPaidTime <- round(paidTime * cost1min,2)
+
+all_rent_interval$rentCost <- all_rent_interval$paidTime*cost1min + all_rent_interval$calc_dist*cost1km
+
 sum(all_rent_interval$rentCost)
 
 rent_period <- as.interval(starttime, endtime)
@@ -158,4 +170,10 @@ ggmap(mapgilbert) +
   guides(fill=FALSE, alpha=FALSE, size=FALSE)
 
 hist(all_rent_interval$coef)
+
+all_rent_interval <- read.csv("all_rent_interval.csv", header=TRUE,row.names=NULL)
+
+all_rent_interval$start_datetime <- as.POSIXct(all_rent_interval$start_datetime)
+all_rent_interval$end_datetime <- as.POSIXct(all_rent_interval$end_datetime)
+
 
