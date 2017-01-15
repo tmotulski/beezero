@@ -1,6 +1,6 @@
 require(jsonlite)
 
-setwd("c:/Projects/Carsharing/datasets/beezero-muc")
+setwd("d:/Projects/Carsharing/datasets/beezero-muc")
 
 files <- list.files(pattern = ".json")
 
